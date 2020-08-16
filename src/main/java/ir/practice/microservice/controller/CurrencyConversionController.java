@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import ir.practice.microservice.model.CurrencyConversionBean;
+import ir.practice.microservice.model.CurrencyExchangeServiceProxy;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -17,6 +18,12 @@ import java.util.Map;
 @RestController
 public class CurrencyConversionController {
 
+    private CurrencyExchangeServiceProxy proxy;
+
+    public CurrencyConversionController(CurrencyExchangeServiceProxy proxy) {
+        this.proxy = proxy;
+    }
+
     @GetMapping("/currency-converter/from/{from}/to/{to}/quantity/{quantity}")
     public CurrencyConversionBean convertCurrency(@PathVariable String from,
                                                   @PathVariable String to,
@@ -29,6 +36,16 @@ public class CurrencyConversionController {
                         CurrencyConversionBean.class, uriVariables);
 
         CurrencyConversionBean response = responseEntity.getBody();
+        return new CurrencyConversionBean(response.getId(), from, to, response.getConversionMultiple(), quantity,
+                quantity.multiply(response.getConversionMultiple()), response.getPort());
+    }
+
+    @GetMapping("/currency-converter-feign/from/{from}/to/{to}/quantity/{quantity}")
+    public CurrencyConversionBean convertCurrencyFeign(@PathVariable String from,
+                                                  @PathVariable String to,
+                                                  @PathVariable BigDecimal quantity) throws JsonProcessingException {
+
+        CurrencyConversionBean response = proxy.retrieveExchangeValue(from, to);
         return new CurrencyConversionBean(response.getId(), from, to, response.getConversionMultiple(), quantity,
                 quantity.multiply(response.getConversionMultiple()), response.getPort());
     }
